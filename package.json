@@ -19,6 +19,8 @@
     "workbox-cli": "^4.3.1"
   },
   "workbox": {
-    "importScripts": []
+    "importScripts": [],
+    "globDirectory": "./dist",
+    "globPatterns": "!(*.map)"
   }
 }
