@@ -1,30 +1,57 @@
 module Main exposing ( main )
 
+import Effect.Program exposing ( Program, program )
+import Effect.Command as Command exposing ( Command )
+import Effect.Storage as Storage
+
+import Data.Message as Message exposing ( Message )
+
 import Browser
 
 import Html exposing (..)
 
-type Model = Model
+import Json.Encode as JE exposing ( Value )
+import Json.Decode as JD
 
-type Msg = NoOp
+type alias Model =
+  { messages : List Message
+  }
+
+type Msg
+  = GotStorageData Value
 
 main : Program () Model Msg
 main =
-  Browser.document
+  program
     { init = init
     , update = update
     , view = viewDocument
-    , subscriptions = always Sub.none
     }
 
-init : () -> ( Model, Cmd Msg )
+init : () -> ( Model, Command Msg )
 init _ =
-  ( Model, Cmd.none )
+  ( Model []
+  , Storage.load GotStorageData "messages"
+  )
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update _ model =
-  ( model, Cmd.none )
+update : Msg -> Model -> ( Model, Command Msg )
+update msg model =
+  -- case Debug.log "Main.update" msg of
+  case msg of
+    GotStorageData val ->
+      case JD.decodeValue ( JD.maybe <| JD.list Message.decoder ) val of
+        Err _ ->
+          -- Message storage was corrupted?
+          ( model, Command.none )
+
+        Ok res ->
+          -- case Debug.log "messages" res of
+          case res of
+            Nothing ->
+              ( model, Command.none )
+            Just msgs ->
+              ( { model | messages = msgs }, Command.none )
 
 
 viewDocument : Model -> Browser.Document Msg

@@ -4,7 +4,7 @@ import 'workbox-sw/build/workbox-sw'
 console.log(self.workbox)
 
 self.workbox.precaching.precacheAndRoute([
-  'index.html'
+  { url: '/index.html', revision: '3' }
 ])
 
 self.workbox.routing.registerRoute(
