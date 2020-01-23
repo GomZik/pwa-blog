@@ -118,12 +118,12 @@ viewDocument model =
 
 viewHeader : Model -> Html Msg
 viewHeader model =
-  div [] []
+  div [ class "header" ] [ text "header" ]
 
 
 viewMessage : Message -> Html Msg
 viewMessage msg =
-  div [] [ text <| Message.text msg ]
+  div [ class "message" ] [ text <| Message.text msg ]
 
 viewBody : Model -> Html Msg
 viewBody model =
