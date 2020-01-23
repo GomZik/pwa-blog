@@ -4,13 +4,11 @@ module Effect.Program.WaitList exposing (..)
 import Json.Encode as JE exposing ( Value )
 import Json.Decode as JD
 
+import Tuple.Extra as Tuple
 
 type Key a = Key Int
 
 type WaitList a = WaitList ( Key a ) ( List ( Key a, a ) )
-
-tupleSwap : ( a, b ) -> ( b, a )
-tupleSwap ( a, b ) = ( b, a )
 
 keyToValue : Key a -> Value
 keyToValue ( Key k ) =
@@ -38,4 +36,4 @@ pop ( Key id ) ( WaitList key itms ) =
       |> List.head
       |> Maybe.map ( \( _, itm ) -> itm)
       |> Maybe.map ( Tuple.pair ( WaitList key newItms ) )
-      |> Maybe.map tupleSwap
+      |> Maybe.map Tuple.swap

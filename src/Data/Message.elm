@@ -1,7 +1,9 @@
 module Data.Message exposing (..)
 
 import Time
+import Time.Extra as Time
 
+import Json.Encode as JE exposing ( Value )
 import Json.Decode as JD exposing ( Decoder )
 
 type alias Internals =
@@ -23,16 +25,24 @@ created ( M data ) = data.created
 text : Message -> String
 text ( M data ) = data.text
 
-
-timeDecoder : Decoder Time.Posix
-timeDecoder =
-  JD.int
-    |> JD.map Time.millisToPosix
-
 decoder : Decoder Message
 decoder =
   JD.map3 Internals
     ( JD.field "id" JD.int )
-    ( JD.field "created" timeDecoder )
+    ( JD.field "created" Time.decoder )
     ( JD.field "text" JD.string )
   |> JD.map M
+
+
+new : Int -> Time.Posix -> String -> Message
+new a b c =
+  Internals a b c |> M
+
+
+encode : Message -> Value
+encode ( M data ) =
+  JE.object
+    [ ( "id", JE.int data.id )
+    , ( "created", Time.encode data.created )
+    , ( "text", JE.string data.text )
+    ]
