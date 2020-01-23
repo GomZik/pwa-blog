@@ -62,32 +62,21 @@ update msg model =
   case msg of
     GotStorageData val ->
       case JD.decodeValue ( JD.maybe <| JD.list Message.decoder ) val of
-        Err err ->
-          -- Message storage was corrupted?
-          -- let
-          --   _ = Debug.log "decode error" err
-          -- in
+        Ok ( Just msgs ) ->
+          ( { model | messages = msgs
+                        |> List.foldl
+                          ( IDList.push Message.id compare )
+                          model.messages
+            }
+          , Command.none
+          )
+
+        _ ->
           ( model, Command.none )
 
-        Ok res ->
-          -- case Debug.log "messages" res of
-          case res of
-            Nothing ->
-              ( model, Command.none )
-            Just msgs ->
-              let
-                step messages lst =
-                  case messages of
-                    [] -> lst
-                    x :: xs ->
-                      step xs
-                        <| IDList.push Message.id compare x lst
-              in
-                ( { model | messages = step msgs model.messages }
-                , Command.none
-                )
     OnInput str ->
       ( { model | inputText = str }, Command.none )
+
     Submit ->
       case model.inputText of
         "" -> ( model, Command.none )
@@ -96,6 +85,7 @@ update msg model =
           , Task.perform ( GotMessageTime str ) Time.now
             |> Command.cmd
           )
+
     GotMessageTime msgText msgTime ->
       let
         ( _, messages ) = model.messages
