@@ -32,30 +32,25 @@ type alias Program flags model msg =
   Platform.Program flags ( Model model msg ) ( Msg msg )
 
 
-runBatchCmd : List ( Command msg ) -> EffectModel msg -> List ( Cmd ( Msg msg ) ) -> ( EffectModel msg, Cmd ( Msg msg ) )
-runBatchCmd cmds model cmdAcc =
-  case cmds of
-    [] ->
-      ( model
-      , cmdAcc
-        |> List.reverse
-        |> Cmd.batch
-      )
-    x :: rest ->
-      let
-        ( nextModel, cmd ) = mapCmd model x
-      in
-        runBatchCmd rest nextModel ( cmd :: cmdAcc )
-
-
 mapCmd : EffectModel msg -> Command msg -> ( EffectModel msg, Cmd ( Msg msg ) )
 mapCmd model cmd =
   case cmd of
-    CmdI.Batch [] -> ( model, Cmd.none )
+    CmdI.Batch [] ->
+      ( model, Cmd.none )
+
     CmdI.Batch cmds ->
-      runBatchCmd cmds model []
+      cmds
+        |> List.foldl (\innerCmd (eff, acc) ->
+          let
+            ( newEff, resultCmd ) = mapCmd eff innerCmd
+          in
+            ( newEff, acc ++ [resultCmd] )
+        ) ( model, [] )
+        |> Tuple.mapSecond Cmd.batch
+
     CmdI.Platform pcmd ->
       ( model, Cmd.map AppMsg pcmd )
+
     CmdI.LoadStorage cb name ->
       let
         ( id, newList ) = WaitList.add cb model.loadStorageWaiters

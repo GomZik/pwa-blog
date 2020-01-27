@@ -48,3 +48,8 @@ map : ( entity -> b ) -> IDList id entity -> List b
 map fn ( IDList lst ) =
   lst.entities
     |> List.map fn
+
+
+toList : IDList id entity -> List entity
+toList ( IDList lst ) =
+  lst.entities
