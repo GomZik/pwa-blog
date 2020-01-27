@@ -8,6 +8,8 @@ import Data.Message as Message exposing ( Message )
 import Data.IDList as IDList exposing ( IDList )
 import Data.NonEmptyList as NonEmptyList exposing ( NonEmptyList )
 
+import Scroll
+
 import Browser
 
 import Html exposing (..)
@@ -33,6 +35,21 @@ type Msg
   | Submit
   | GotMessageTime String Time.Posix
   | GotZone Time.Zone
+  | NoOp
+
+
+type ScrollSpeed = Immediately | Smooth
+
+scrollBottom : ScrollSpeed -> Command Msg
+scrollBottom spd =
+  let
+    cfg = case spd of
+      Immediately -> let dc = Scroll.defaultConfig in { dc | time = 0 }
+      Smooth -> Scroll.defaultConfig
+  in
+    Scroll.scrollBottom cfg
+      |> Task.attempt ( \res -> let _ = Debug.log "scroll result" res in NoOp )
+      |> Command.cmd
 
 main : Program () Model Msg
 main =
@@ -75,7 +92,7 @@ update msg model =
                           ( IDList.push Message.id compare )
                           model.messages
             }
-          , Command.none
+          , scrollBottom Immediately
           )
 
         _ ->
@@ -99,13 +116,18 @@ update msg model =
           |> IDList.add (\id -> Message.new id msgTime msgText )
       in
         ( { model | messages = messages }
-        , storeMessages messages
+        , Command.batch
+          [ storeMessages messages
+          , scrollBottom Smooth
+          ]
         )
 
     GotZone zone ->
       ( { model | here = Just zone }
       , Command.none
       )
+
+    NoOp -> ( model, Command.none )
 
 
 viewDocument : Model -> Browser.Document Msg
@@ -149,7 +171,32 @@ viewMessage here msg =
 
 viewDateDelimiter : Maybe Time.Zone -> Time.Posix -> Html Msg
 viewDateDelimiter mbHere t =
-  text ""
+  let
+    ( day, month ) = case mbHere of
+      Nothing ->
+        ( 0, Time.Jan )
+      Just zone ->
+        ( Time.toDay zone t
+        , Time.toMonth zone t )
+
+    monthStr = case month of
+      Time.Jan -> "Jan"
+      Time.Feb -> "Feb"
+      Time.Mar -> "Mar"
+      Time.Apr -> "Apr"
+      Time.May -> "May"
+      Time.Jun -> "Jun"
+      Time.Jul -> "Jul"
+      Time.Aug -> "Aug"
+      Time.Sep -> "Sep"
+      Time.Oct -> "Oct"
+      Time.Nov -> "Nov"
+      Time.Dec -> "Dec"
+
+    dayStr = String.fromInt day
+  in
+    div [ class "date-delimiter" ]
+      [ text <| dayStr ++ " " ++ monthStr ]
 
 viewMessageGroup : Maybe Time.Zone -> MessageGroup -> Html Msg
 viewMessageGroup here grp =
@@ -184,7 +231,7 @@ msgDateDiff zone msg1 msg2 =
 
     millsDiff = Time.posixToMillis t1 - Time.posixToMillis t2
   in
-    case ( oneDay, millsDiff < 3600000 ) of
+    case ( oneDay, millsDiff < 900000 ) of
       ( False, _ ) -> GreaterThanDay
       ( True, True ) -> LessThanHour
       _ -> LessThanDay
@@ -222,7 +269,10 @@ groupMessages mbZone messages =
                       helper xs ( Just <| Messages <| NonEmptyList.singleton x ) ( ms :: acc )
 
                     GreaterThanDay ->
-                      helper ( x :: xs ) ( Just <| DateDelimiter <| Message.created x ) acc
+                      helper ( x :: xs ) ( Just <| DateDelimiter <| Message.created x ) <|
+                        case mbPrev of
+                          Nothing -> acc
+                          Just grp -> grp :: acc
 
                 Nothing ->
                   helper xs ( Just <| Messages <| NonEmptyList.append x lst ) acc

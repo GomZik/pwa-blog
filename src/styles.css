@@ -19,14 +19,13 @@ body *, body *::after, body *::before {
     width: 100%;
     background-color: lightblue;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    z-index: 1;
 }
 
 .messages {
-    height: 100%;
     display: flex;
     flex-direction: column;
     padding: 3.1rem .7rem;
-    overflow-y: auto;
     align-items: flex-end;
 }
 
@@ -81,7 +80,6 @@ body *, body *::after, body *::before {
 .message .text {
     padding: 0;
     margin: 0;
-    text-align: right;
 }
 
 .message .time {
@@ -93,4 +91,10 @@ body *, body *::after, body *::before {
     position: absolute;
     bottom: .3rem;
     right: .8rem;
+}
+
+.date-delimiter {
+    margin: 1rem 0;
+    align-self: center;
+    color: gray;
 }
