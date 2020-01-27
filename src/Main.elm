@@ -48,7 +48,7 @@ scrollBottom spd =
       Smooth -> Scroll.defaultConfig
   in
     Scroll.scrollBottom cfg
-      |> Task.attempt ( \res -> let _ = Debug.log "scroll result" res in NoOp )
+      |> Task.attempt ( always NoOp )
       |> Command.cmd
 
 main : Program () Model Msg
